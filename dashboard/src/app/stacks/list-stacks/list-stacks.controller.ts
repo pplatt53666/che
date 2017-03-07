@@ -150,7 +150,7 @@ export class ListStacksController {
     delete newStack.links;
     delete newStack.creator;
     delete newStack.id;
-    newStack.name = this.generateStackName(stack.name + ' - Copy');
+    newStack.name = this.generateStackName(stack.name + '-copy');
     this.loading = true;
     this.cheStack.createStack(newStack).then(() => {
       this.getStacks();
@@ -168,20 +168,22 @@ export class ListStacksController {
    * @returns {string}
    */
   generateStackName(name: string): string {
+    /* tslint:disable */
+    name += '-' + (('0000' + (Math.random() * Math.pow(36, 4) << 0).toString(36)).slice(-4));
+    /* tslint:enable */
     if (this.stacks.length === 0) {
       return name;
     }
     let existingNames = this.lodash.pluck(this.stacks, 'name');
-
     if (existingNames.indexOf(name) < 0) {
       return name;
     }
-
     let generatedName = name;
     let counter = 1;
     while (existingNames.indexOf(generatedName) >= 0) {
       generatedName = name + counter++;
     }
+
     return generatedName;
   }
 
