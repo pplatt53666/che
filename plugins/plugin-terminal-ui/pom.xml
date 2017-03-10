@@ -56,6 +56,8 @@
                       <exclude>**/src/EventEmitter.js</exclude>
                       <exclude>**/src/xterm.js</exclude>
                       <exclude>**/src/Interfaces.ts</exclude>
+                      <exclude>**/src/Types.ts</exclude>
+                      <exclude>**/src/Linkifier.ts</exclude>
                       <exclude>**/**</exclude>
                     </excludes>
                 </configuration>

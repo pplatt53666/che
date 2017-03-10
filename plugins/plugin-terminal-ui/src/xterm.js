@@ -19,6 +19,7 @@ import { C0 } from './EscapeSequences';
 import { InputHandler } from './InputHandler';
 import { Parser } from './Parser';
 import { Renderer } from './Renderer';
+import { Linkifier } from './Linkifier';
 import { CharMeasure } from './utils/CharMeasure';
 import * as Browser from './utils/Browser';
 import * as Keyboard from './utils/Keyboard';
@@ -124,6 +125,7 @@ function Terminal(options) {
 
   this.cols = options.cols || options.geometry[0];
   this.rows = options.rows || options.geometry[1];
+  this.focusOnOpen = options.focusOnOpen;
   this.geometry = [this.cols, this.rows];
 
   if (options.handler) {
@@ -192,6 +194,8 @@ function Terminal(options) {
   this.refreshEnd;
   this.savedX;
   this.savedY;
+  this.savedAltX;
+  this.savedAltY;
   this.savedCols;
 
   // stream
@@ -210,6 +214,7 @@ function Terminal(options) {
   this.parser = new Parser(this.inputHandler, this);
   // Reuse renderer if the Terminal is being recreated via a Terminal.reset call.
   this.renderer = this.renderer || null;
+  this.linkifier = this.linkifier || null;;
 
   // user input states
   this.writeBuffer = [];
@@ -354,7 +359,8 @@ Terminal.defaults = {
   cancelEvents: false,
   disableStdin: false,
   useFlowControl: false,
-  tabStopWidth: 8
+  tabStopWidth: 8,
+  focusOnOpen: true
   // programFeatures: false,
   // focusKeys: false,
 };
@@ -546,6 +552,9 @@ Terminal.bindKeys = function(term) {
   on(term.textarea, 'compositionupdate', term.compositionHelper.compositionupdate.bind(term.compositionHelper));
   on(term.textarea, 'compositionend', term.compositionHelper.compositionend.bind(term.compositionHelper));
   term.on('refresh', term.compositionHelper.updateCompositionElements.bind(term.compositionHelper));
+  term.on('refresh', function (data) {
+    term.queueLinkification(data.start, data.end)
+  });
 };
 
 
@@ -607,6 +616,7 @@ Terminal.prototype.open = function(parent) {
   this.rowContainer.classList.add('xterm-rows');
   this.element.appendChild(this.rowContainer);
   this.children = [];
+  this.linkifier = new Linkifier(document, this.children);
 
   // Create the container that will hold helpers like the textarea for
   // capturing DOM Events. Then produce the helpers.
@@ -641,7 +651,7 @@ Terminal.prototype.open = function(parent) {
   }
   this.parent.appendChild(this.element);
 
-  this.charMeasure = new CharMeasure(this.helperContainer);
+  this.charMeasure = new CharMeasure(document, this.helperContainer);
   this.charMeasure.on('charsizechanged', function () {
     self.updateCharSizeCSS();
   });
@@ -658,7 +668,9 @@ Terminal.prototype.open = function(parent) {
   this.initGlobal();
 
   // Ensure there is a Terminal.focus.
-  this.focus();
+  if (this.focusOnOpen) {
+    this.focus();
+  }
 
   on(this.element, 'click', function() {
     var selection = document.getSelection(),
@@ -957,10 +969,8 @@ Terminal.prototype.bindMouse = function() {
     }
 
     // convert to cols/rows
-    w = self.element.clientWidth;
-    h = self.element.clientHeight;
-    x = Math.ceil((x / w) * self.cols);
-    y = Math.ceil((y / h) * self.rows);
+    x = Math.ceil(x / self.charMeasure.width);
+    y = Math.ceil(y / self.charMeasure.height);
 
     // be sure to avoid sending
     // bad positions to the program
@@ -1054,14 +1064,27 @@ Terminal.prototype.destroy = function() {
 /**
  * Tells the renderer to refresh terminal content between two rows (inclusive) at the next
  * opportunity.
- * @param {number} start The row to start from (between 0 and terminal's height terminal - 1)
- * @param {number} end The row to end at (between fromRow and terminal's height terminal - 1)
+ * @param {number} start The row to start from (between 0 and this.rows - 1).
+ * @param {number} end The row to end at (between start and this.rows - 1).
  */
 Terminal.prototype.refresh = function(start, end) {
   if (this.renderer) {
     this.renderer.queueRefresh(start, end);
   }
 };
+
+/**
+ * Queues linkification for the specified rows.
+ * @param {number} start The row to start from (between 0 and this.rows - 1).
+ * @param {number} end The row to end at (between start and this.rows - 1).
+ */
+Terminal.prototype.queueLinkification = function(start, end) {
+  if (this.linkifier) {
+    for (let i = start; i <= end; i++) {
+      this.linkifier.linkifyRow(i);
+    }
+  }
+}
 
 /**
  * Display the cursor element
@@ -1261,6 +1284,51 @@ Terminal.prototype.writeln = function(data) {
  */
 Terminal.prototype.attachCustomKeydownHandler = function(customKeydownHandler) {
   this.customKeydownHandler = customKeydownHandler;
+}
+
+/**
+ * Attaches a http(s) link handler, forcing web links to behave differently to
+ * regular <a> tags. This will trigger a refresh as links potentially need to be
+ * reconstructed. Calling this with null will remove the handler.
+ * @param {LinkHandler} handler The handler callback function.
+ */
+Terminal.prototype.attachHypertextLinkHandler = function(handler) {
+  if (!this.linkifier) {
+    throw new Error('Cannot attach a hypertext link handler before Terminal.open is called');
+  }
+  this.linkifier.attachHypertextLinkHandler(handler);
+  // Refresh to force links to refresh
+  this.refresh(0, this.rows - 1);
+}
+
+/**
+   * Registers a link matcher, allowing custom link patterns to be matched and
+   * handled.
+   * @param {RegExp} regex The regular expression to search for, specifically
+   * this searches the textContent of the rows. You will want to use \s to match
+   * a space ' ' character for example.
+   * @param {LinkHandler} handler The callback when the link is called.
+   * @param {LinkMatcherOptions} [options] Options for the link matcher.
+   * @return {number} The ID of the new matcher, this can be used to deregister.
+ */
+Terminal.prototype.registerLinkMatcher = function(regex, handler, options) {
+  if (this.linkifier) {
+    var matcherId = this.linkifier.registerLinkMatcher(regex, handler, options);
+    this.refresh(0, this.rows - 1);
+    return matcherId;
+  }
+}
+
+/**
+ * Deregisters a link matcher if it has been registered.
+ * @param {number} matcherId The link matcher's ID (returned after register)
+ */
+Terminal.prototype.deregisterLinkMatcher = function(matcherId) {
+  if (this.linkifier) {
+    if (this.linkifier.deregisterLinkMatcher(matcherId)) {
+      this.refresh(0, this.rows - 1);
+    }
+  }
 }
 
 /**
@@ -2087,8 +2155,10 @@ Terminal.prototype.reset = function() {
   this.options.rows = this.rows;
   this.options.cols = this.cols;
   var customKeydownHandler = this.customKeydownHandler;
+  var normal = this.normal;
   Terminal.call(this, this.options);
   this.customKeydownHandler = customKeydownHandler;
+  this.normal = normal;
   this.refresh(0, this.rows - 1);
   this.viewport.syncScrollArea();
 };

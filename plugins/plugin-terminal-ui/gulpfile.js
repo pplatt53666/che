@@ -18,7 +18,7 @@ var buildDir = process.env.BUILD_DIR || 'build';
  * file compiled.
  */
 gulp.task('tsc', function () {
-  // Remove the lib/ directory to prevent confusion if files were devared in src/
+  // Remove the lib/ directory to prevent confusion if files were deleted in src/
   fs.emptyDirSync('lib');
 
   // Build all TypeScript files (including tests) to lib/, based on the configuration defined in

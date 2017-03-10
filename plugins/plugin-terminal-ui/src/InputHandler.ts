@@ -928,25 +928,12 @@ export class InputHandler implements IInputHandler {
           this._terminal.cursorHidden = false;
           break;
         case 1049: // alt screen buffer cursor
-          // this._terminal.saveCursor();
+          this.saveCursor(params);
           ; // FALL-THROUGH
         case 47: // alt screen buffer
         case 1047: // alt screen buffer
           if (!this._terminal.normal) {
-            let normal = {
-              lines: this._terminal.lines,
-              ybase: this._terminal.ybase,
-              ydisp: this._terminal.ydisp,
-              x: this._terminal.x,
-              y: this._terminal.y,
-              scrollTop: this._terminal.scrollTop,
-              scrollBottom: this._terminal.scrollBottom,
-              tabs: this._terminal.tabs
-              // XXX save charset(s) here?
-              // charset: this._terminal.charset,
-              // glevel: this._terminal.glevel,
-              // charsets: this._terminal.charsets
-            };
+            let normal = this.saveState();
             this._terminal.reset();
             this._terminal.viewport.syncScrollArea();
             this._terminal.normal = normal;
@@ -955,6 +942,23 @@ export class InputHandler implements IInputHandler {
           break;
       }
     }
+  }
+
+  private saveState(): any {
+    return {
+      lines: this._terminal.lines,
+      ybase: this._terminal.ybase,
+      ydisp: this._terminal.ydisp,
+      x: this._terminal.x,
+      y: this._terminal.y,
+      scrollTop: this._terminal.scrollTop,
+      scrollBottom: this._terminal.scrollBottom,
+      tabs: this._terminal.tabs
+      // XXX save charset(s) here?
+      // charset: this._terminal.charset,
+      // glevel: this._terminal.glevel,
+      // charsets: this._terminal.charsets
+    };
   }
 
   /**
@@ -1121,10 +1125,9 @@ export class InputHandler implements IInputHandler {
             this._terminal.scrollBottom = this._terminal.normal.scrollBottom;
             this._terminal.tabs = this._terminal.normal.tabs;
             this._terminal.normal = null;
-            // if (params === 1049) {
-            //   this.x = this.savedX;
-            //   this.y = this.savedY;
-            // }
+            if (params[0] === 1049) {
+              this.restoreCursor(params);
+            }
             this._terminal.refresh(0, this._terminal.rows - 1);
             this._terminal.viewport.syncScrollArea();
             this._terminal.showCursor();
@@ -1394,7 +1397,7 @@ export class InputHandler implements IInputHandler {
     this._terminal.cursorHidden = false;
     this._terminal.insertMode = false;
     this._terminal.originMode = false;
-    this._terminal.wraparoundMode = false; // autowrap
+    this._terminal.wraparoundMode = true;  // defaults: xterm - true, vt100 - false
     this._terminal.applicationKeypad = false; // ?
     this._terminal.viewport.syncScrollArea();
     this._terminal.applicationCursor = false;
@@ -1457,8 +1460,13 @@ export class InputHandler implements IInputHandler {
    *   Save cursor (ANSI.SYS).
    */
   public saveCursor(params: number[]): void {
-    this._terminal.savedX = this._terminal.x;
-    this._terminal.savedY = this._terminal.y;
+    if (this._terminal.normal) {
+      this._terminal.savedX = this._terminal.x;
+      this._terminal.savedY = this._terminal.y;
+    } else {
+      this._terminal.savedAltX = this._terminal.x;
+      this._terminal.savedAltY = this._terminal.y;
+    }
   }
 
 
@@ -1467,8 +1475,13 @@ export class InputHandler implements IInputHandler {
    *   Restore cursor (ANSI.SYS).
    */
   public restoreCursor(params: number[]): void {
-    this._terminal.x = this._terminal.savedX || 0;
-    this._terminal.y = this._terminal.savedY || 0;
+    if (this._terminal.normal) {
+      this._terminal.x = this._terminal.savedX || 0;
+      this._terminal.y = this._terminal.savedY || 0;
+    } else {
+      this._terminal.x = this._terminal.savedAltX || 0;
+      this._terminal.y = this._terminal.savedAltY || 0;
+    }
   }
 }
 
