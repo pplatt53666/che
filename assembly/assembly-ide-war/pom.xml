@@ -296,8 +296,8 @@
             <artifactId>che-plugin-zend-debugger-ide</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.che.plugin</groupId>
-            <artifactId>plugin-terminal-ui</artifactId>
+            <groupId>org.eclipse.che.lib</groupId>
+            <artifactId>che-terminal-client</artifactId>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
