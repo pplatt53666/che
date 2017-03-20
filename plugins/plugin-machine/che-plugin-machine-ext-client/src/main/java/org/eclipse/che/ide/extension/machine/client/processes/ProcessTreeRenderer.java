@@ -18,9 +18,12 @@ import elemental.html.DivElement;
 import elemental.html.SpanElement;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 import org.eclipse.che.api.core.model.machine.MachineConfig;
+import org.eclipse.che.ide.api.app.AppContext;
 import org.eclipse.che.ide.api.machine.MachineEntity;
+import org.eclipse.che.ide.api.machine.WsAgentStateController;
 import org.eclipse.che.ide.api.parts.PartStackUIResources;
 import org.eclipse.che.ide.extension.machine.client.MachineLocalizationConstant;
 import org.eclipse.che.ide.extension.machine.client.MachineResources;
@@ -32,6 +35,7 @@ import org.eclipse.che.ide.util.dom.Elements;
 import org.vectomatic.dom.svg.ui.SVGImage;
 import org.vectomatic.dom.svg.ui.SVGResource;
 
+import javax.inject.Provider;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,6 +48,7 @@ import static org.eclipse.che.ide.ui.menu.PositionController.VerticalAlign.BOTTO
  * @author Anna Shumilova
  * @author Roman Nikitenko
  */
+@Singleton
 public class ProcessTreeRenderer implements NodeRenderer<ProcessTreeNode> {
 
     public static final Map<String, String> LABELS = new HashMap<String, String>() {
@@ -53,23 +58,29 @@ public class ProcessTreeRenderer implements NodeRenderer<ProcessTreeNode> {
         }
     };
 
-    private final MachineResources            resources;
-    private final MachineLocalizationConstant locale;
-    private final PartStackUIResources        partStackUIResources;
-    private       AddTerminalClickHandler     addTerminalClickHandler;
-    private       PreviewSshClickHandler      previewSshClickHandler;
-    private       StopProcessHandler          stopProcessHandler;
-    private final MachineMonitors             machineMonitors;
+    private final MachineResources                 resources;
+    private final MachineLocalizationConstant      locale;
+    private final PartStackUIResources             partStackUIResources;
+    private       AddTerminalClickHandler          addTerminalClickHandler;
+    private       PreviewSshClickHandler           previewSshClickHandler;
+    private       StopProcessHandler               stopProcessHandler;
+    private final MachineMonitors                  machineMonitors;
+    private final Provider<WsAgentStateController> wsAgentStateController;
+    private final AppContext                       appContext;
 
     @Inject
     public ProcessTreeRenderer(MachineResources resources,
                                MachineLocalizationConstant locale,
                                PartStackUIResources partStackUIResources,
-                               MachineMonitors machineMonitors) {
+                               MachineMonitors machineMonitors,
+                               Provider<WsAgentStateController> wsAgentStateController,
+                               AppContext appContext) {
         this.resources = resources;
         this.locale = locale;
         this.partStackUIResources = partStackUIResources;
         this.machineMonitors = machineMonitors;
+        this.wsAgentStateController = wsAgentStateController;
+        this.appContext = appContext;
     }
 
     @Override
@@ -141,7 +152,7 @@ public class ProcessTreeRenderer implements NodeRenderer<ProcessTreeNode> {
          * New terminal button
          *
          ***************************************************************************/
-        if (node.isRunning() && node.hasTerminalAgent()) {
+        if (node.isShowAddTerminalBtn()) {
             SpanElement newTerminalButton = Elements.createSpanElement(resources.getCss().newTerminalButton());
             newTerminalButton.appendChild((Node)new SVGImage(resources.addTerminalIcon()).getElement());
             root.appendChild(newTerminalButton);

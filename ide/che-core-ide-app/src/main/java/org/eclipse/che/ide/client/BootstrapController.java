@@ -97,11 +97,13 @@ public class BootstrapController {
 
     @Inject
     private void startComponents(Map<String, Provider<Component>> components) {
+        Log.info(getClass(), "START COMPONENTS");
         startComponents(components.entrySet().iterator());
     }
 
     @Inject
     private void startWsAgentComponents(EventBus eventBus, final Map<String, Provider<WsAgentComponent>> components) {
+        Log.info(getClass(), "START WS-AGENT COMPONENTS");
         eventBus.addHandler(WorkspaceStartedEvent.TYPE, new WorkspaceStartedEvent.Handler() {
             @Override
             public void onWorkspaceStarted(WorkspaceStartedEvent event) {
@@ -141,6 +143,7 @@ public class BootstrapController {
                 Provider<Component> componentProvider = entry.getValue();
 
                 final Component component = componentProvider.get();
+                Log.info(getClass(), "RUN COMPONENT: " + componentName );
                 component.start(new Callback<Component, Exception>() {
                     @Override
                     public void onSuccess(Component result) {

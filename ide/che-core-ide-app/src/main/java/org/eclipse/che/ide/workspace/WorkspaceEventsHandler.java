@@ -59,6 +59,7 @@ import org.eclipse.che.ide.websocket.rest.SubscriptionHandler;
 import org.eclipse.che.ide.workspace.start.StartWorkspaceNotification;
 
 import java.util.List;
+import java.util.Set;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.eclipse.che.api.machine.shared.Constants.LINK_REL_ENVIRONMENT_OUTPUT_CHANNEL;
@@ -130,7 +131,8 @@ public class WorkspaceEventsHandler {
                            final Provider<DefaultWorkspaceComponent> wsComponentProvider,
                            final AsyncRequestFactory asyncRequestFactory,
                            final ExecAgentCommandManager execAgentCommandManager,
-                           final LoaderPresenter loader) {
+                           final LoaderPresenter loader,
+                           final Set<MachineStatusChangedEvent.Handler> handlerSet) {
         this.eventBus = eventBus;
         this.locale = locale;
         this.messageBusProvider = messageBusProvider;
@@ -144,6 +146,10 @@ public class WorkspaceEventsHandler {
         this.asyncRequestFactory = asyncRequestFactory;
         this.execAgentCommandManager = execAgentCommandManager;
         this.loader = loader;
+
+        for (MachineStatusChangedEvent.Handler handler: handlerSet) {
+            eventBus.addHandler(MachineStatusChangedEvent.TYPE, handler);
+        }
     }
 
     /**

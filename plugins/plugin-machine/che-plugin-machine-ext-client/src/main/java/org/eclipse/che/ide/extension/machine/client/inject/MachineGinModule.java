@@ -21,9 +21,11 @@ import org.eclipse.che.ide.api.command.CommandManager;
 import org.eclipse.che.ide.api.command.CommandType;
 import org.eclipse.che.ide.api.extension.ExtensionGinModule;
 import org.eclipse.che.ide.api.machine.MachineEntity;
+import org.eclipse.che.ide.api.machine.events.MachineStateEvent;
 import org.eclipse.che.ide.api.machine.events.WsAgentStateHandler;
 import org.eclipse.che.ide.api.macro.Macro;
 import org.eclipse.che.ide.api.outputconsole.OutputConsole;
+import org.eclipse.che.ide.api.workspace.event.MachineStatusChangedEvent;
 import org.eclipse.che.ide.extension.machine.client.MachineExtension;
 import org.eclipse.che.ide.extension.machine.client.RecipeScriptDownloadServiceClient;
 import org.eclipse.che.ide.extension.machine.client.RecipeScriptDownloadServiceClientImpl;
@@ -38,6 +40,7 @@ import org.eclipse.che.ide.extension.machine.client.inject.factories.EntityFacto
 import org.eclipse.che.ide.extension.machine.client.inject.factories.TerminalFactory;
 import org.eclipse.che.ide.extension.machine.client.inject.factories.WidgetsFactory;
 import org.eclipse.che.ide.extension.machine.client.machine.MachineItem;
+import org.eclipse.che.ide.extension.machine.client.machine.MachineStatusHandler;
 import org.eclipse.che.ide.extension.machine.client.outputspanel.console.CommandConsoleFactory;
 import org.eclipse.che.ide.extension.machine.client.outputspanel.console.CommandOutputConsole;
 import org.eclipse.che.ide.extension.machine.client.outputspanel.console.CommandOutputConsolePresenter;
@@ -129,5 +132,11 @@ public class MachineGinModule extends AbstractGinModule {
         GinMultibinder<WsAgentStateHandler> wsAgentStateHandlerBinder = GinMultibinder.newSetBinder(binder(), WsAgentStateHandler.class);
         wsAgentStateHandlerBinder.addBinding().to(MachineExtension.class);
         wsAgentStateHandlerBinder.addBinding().to(ProcessesPanelPresenter.class);
+
+        GinMultibinder<MachineStateEvent.Handler> machineStateHandlerBinder = GinMultibinder.newSetBinder(binder(), MachineStateEvent.Handler.class);
+        machineStateHandlerBinder.addBinding().to(ProcessesPanelPresenter.class);
+
+        GinMultibinder<MachineStatusChangedEvent.Handler> machineStatusHandlerBinder = GinMultibinder.newSetBinder(binder(), MachineStatusChangedEvent.Handler.class);
+        machineStatusHandlerBinder.addBinding().to(MachineStatusHandler.class);
     }
 }

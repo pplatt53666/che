@@ -218,7 +218,7 @@ public class WsAgentStateController implements ConnectionOpenedHandler, Connecti
             });
         }
     }
-
+//
     /**
      * Try to connect via WebSocket connection
      */

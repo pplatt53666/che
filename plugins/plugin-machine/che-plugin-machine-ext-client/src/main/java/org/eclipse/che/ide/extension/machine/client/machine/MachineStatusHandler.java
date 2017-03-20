@@ -24,6 +24,9 @@ import org.eclipse.che.ide.api.workspace.WorkspaceServiceClient;
 import org.eclipse.che.ide.api.workspace.event.MachineStatusChangedEvent;
 import org.eclipse.che.ide.extension.machine.client.MachineLocalizationConstant;
 import org.eclipse.che.ide.extension.machine.client.inject.factories.EntityFactory;
+import org.eclipse.che.ide.util.loging.Log;
+
+import java.util.Set;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.eclipse.che.ide.api.machine.events.MachineStateEvent.MachineAction.CREATING;
@@ -53,7 +56,8 @@ public class MachineStatusHandler implements MachineStatusChangedEvent.Handler {
                          final EntityFactory entityFactory,
                          final WorkspaceServiceClient workspaceServiceClient,
                          final NotificationManager notificationManager,
-                         final MachineLocalizationConstant locale) {
+                         final MachineLocalizationConstant locale,
+                         final Set<MachineStateEvent.Handler> handlers) {
         this.eventBus = eventBus;
         this.appContext = appContext;
         this.entityFactory = entityFactory;
@@ -61,7 +65,11 @@ public class MachineStatusHandler implements MachineStatusChangedEvent.Handler {
         this.notificationManager = notificationManager;
         this.locale = locale;
 
+        Log.info(getClass(), "describe on MachineStatusChangedEvent");
         eventBus.addHandler(MachineStatusChangedEvent.TYPE, this);
+        for (MachineStateEvent.Handler handler: handlers) {
+            eventBus.addHandler(MachineStateEvent.TYPE, handler);
+        }
     }
 
     @Override
@@ -113,6 +121,7 @@ public class MachineStatusHandler implements MachineStatusChangedEvent.Handler {
         if (machine == null) {
             return;
         }
+        Log.info(getClass(), "fire machine creation event");
         eventBus.fireEvent(new MachineStateEvent(machine, CREATING));
     }
 
@@ -122,6 +131,7 @@ public class MachineStatusHandler implements MachineStatusChangedEvent.Handler {
             return;
         }
 
+        Log.info(getClass(), "fire machine running event");
         eventBus.fireEvent(new MachineStateEvent(machine, RUNNING));
     }
 
