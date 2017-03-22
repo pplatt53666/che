@@ -144,12 +144,7 @@ public class BootstrapController {
                 component.start(new Callback<Component, Exception>() {
                     @Override
                     public void onSuccess(Component result) {
-                        Scheduler.get().scheduleDeferred(new ScheduledCommand() {
-                            @Override
-                            public void execute() {
-                                startComponents(componentIterator);
-                            }
-                        });
+                        startComponents(componentIterator);
                     }
 
                     @Override

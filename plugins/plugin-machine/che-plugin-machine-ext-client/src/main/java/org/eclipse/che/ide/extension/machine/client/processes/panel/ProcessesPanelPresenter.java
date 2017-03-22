@@ -20,6 +20,7 @@ import com.google.web.bindery.event.shared.EventBus;
 
 import org.eclipse.che.api.core.model.machine.Command;
 import org.eclipse.che.api.core.model.machine.Machine;
+import org.eclipse.che.api.core.model.machine.MachineStatus;
 import org.eclipse.che.api.core.model.machine.Server;
 import org.eclipse.che.api.core.model.workspace.Environment;
 import org.eclipse.che.api.core.model.workspace.ExtendedMachine;
@@ -213,47 +214,6 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
         if (appContext.getFactory() == null) {
             partStack.setActivePart(this);
         }
-
-        Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-            @Override
-            public void execute() {
-                updateMachineList();
-            }
-        });
-    }
-
-    /**
-     * Updates list of the machines from application context.
-     */
-    public void updateMachineList() {
-        if (appContext.getWorkspace() == null) {
-            return;
-        }
-
-        List<MachineEntity> machines = getMachines(appContext.getWorkspace());
-        if (machines.isEmpty()) {
-            return;
-        }
-
-        ProcessTreeNode machineToSelect = null;
-        for (MachineEntity machine : machines) {
-            if (machine.isDev()) {
-                provideMachineNode(machine, true);
-                machines.remove(machine);
-                break;
-            }
-        }
-
-        for (MachineEntity machine : machines) {
-            provideMachineNode(machine, true);
-        }
-
-        if (machineToSelect == null) {
-            machineToSelect = machineNodes.entrySet().iterator().next().getValue();
-        }
-
-        view.selectNode(machineToSelect);
-        notifyTreeNodeSelected(machineToSelect);
     }
 
     /**
@@ -302,13 +262,13 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
 
     @Override
     public void onMachineCreating(MachineStateEvent event) {
-        provideMachineNode(event.getMachine(), false);
+        provideMachineNode(event.getMachine(), false, false);
     }
 
     @Override
     public void onMachineRunning(MachineStateEvent event) {
         machines.put(event.getMachineId(), event.getMachine());
-        provideMachineNode(event.getMachine(), true);
+        provideMachineNode(event.getMachine(), true, false);
     }
 
     @Override
@@ -415,7 +375,7 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
             return;
         }
 
-        final ProcessTreeNode machineTreeNode = provideMachineNode(machine, false);
+        final ProcessTreeNode machineTreeNode = provideMachineNode(machine, false, false);
         final TerminalPresenter newTerminal = terminalFactory.create(machine, source);
         final IsWidget terminalWidget = newTerminal.getView();
         final String terminalName = getUniqueTerminalName(machineTreeNode);
@@ -830,7 +790,7 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
      *         existed node will be replaced when {@code replace} is {@code true}
      * @return machine node
      */
-    private ProcessTreeNode provideMachineNode(@NotNull MachineEntity machine, boolean replace) {
+    private ProcessTreeNode provideMachineNode(@NotNull MachineEntity machine, boolean replace, boolean showAddTerminalBtn) {
         final String machineId = machine.getId();
         final ProcessTreeNode existedMachineNode = findProcessTreeNodeById(machineId);
         if (!replace && existedMachineNode != null) {
@@ -847,7 +807,8 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
 
         // create new node
         final ProcessTreeNode newMachineNode = new ProcessTreeNode(MACHINE_NODE, rootNode, machine, null, new ArrayList<ProcessTreeNode>());
-        newMachineNode.setRunning(true);
+        newMachineNode.setRunning(MachineStatus.RUNNING == machine.getStatus());
+        newMachineNode.setShowAddTerminalBtn(showAddTerminalBtn);
         newMachineNode.setHasTerminalAgent(hasAgent(machine.getDisplayName(), TERMINAL_AGENT) || hasTerminal(machineId));
         newMachineNode.setHasSSHAgent(hasAgent(machine.getDisplayName(), SSH_AGENT));
         machineNodes.put(machineId, newMachineNode);
@@ -918,12 +879,12 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
 
         ProcessTreeNode machineToSelect = null;
         if (devMachine != null) {
-            machineToSelect = provideMachineNode(devMachine, true);
+            machineToSelect = provideMachineNode(devMachine, true, false);
             wsMachines.remove(devMachine);
         }
 
         for (MachineEntity machine : wsMachines) {
-            provideMachineNode(machine, true);
+            provideMachineNode(machine, true, false);
         }
 
         if (machineToSelect != null) {
@@ -937,7 +898,7 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
 
         for (MachineEntity machine : machines.values()) {
             if (RUNNING.equals(machine.getStatus()) && !wsMachines.contains(machine)) {
-                provideMachineNode(machine, true);
+                provideMachineNode(machine, true, false);
             }
         }
     }
@@ -948,6 +909,7 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
             for (ProcessTreeNode node : rootNode.getChildren()) {
                 if (MACHINE_NODE == node.getType()) {
                     node.setRunning(false);
+                    node.setShowAddTerminalBtn(false);
 
                     ArrayList<ProcessTreeNode> children = new ArrayList<>();
                     children.addAll(node.getChildren());
@@ -994,6 +956,7 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
         }
 
         for (MachineEntity machine : machines) {
+            provideMachineNode(machine, true, true);
             restoreState(machine);
         }
 
@@ -1166,7 +1129,7 @@ public class ProcessesPanelPresenter extends BasePresenter implements ProcessesP
                                     .withName(machineName)
                                     .withType("docker")
                     );
-            provideMachineNode(new MachineItem(machineDto), true);
+            provideMachineNode(new MachineItem(machineDto), true, false);
         }
 
         OutputConsole console = consoles.get(machineName);
