@@ -58,6 +58,9 @@ public interface EditorLocalizationConstants extends Messages {
     @DefaultMessage("Tab Size:")
     String propertyTabSize();
 
+    @DefaultMessage("Word wrap:")
+    String propertyWordWrap();
+
     @DefaultMessage("Autopair (Parentheses):")
     String propertyAutoPairParentheses();
 

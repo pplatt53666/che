@@ -20,6 +20,7 @@ import java.util.List;
 
 import static org.eclipse.che.ide.editor.preferences.editorproperties.EditorProperties.EXPAND_TAB;
 import static org.eclipse.che.ide.editor.preferences.editorproperties.EditorProperties.TAB_SIZE;
+import static org.eclipse.che.ide.editor.preferences.editorproperties.EditorProperties.WORD_WRAP;
 
 /**
  * The class provides info about 'Tabs' editor's section.
@@ -35,7 +36,9 @@ public class TabsPropertiesSection implements EditorPropertiesSection {
     public TabsPropertiesSection(EditorLocalizationConstants locale) {
         this.locale = locale;
         properties = Arrays.asList(TAB_SIZE.toString(),
-                                   EXPAND_TAB.toString());
+                                   EXPAND_TAB.toString(),
+                                   WORD_WRAP.toString()
+        );
     }
 
     @Override
