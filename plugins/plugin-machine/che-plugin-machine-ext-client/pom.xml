@@ -94,16 +94,16 @@
             <artifactId>che-core-ide-ui</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.eclipse.che.lib</groupId>
+            <artifactId>che-terminal-client</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.che.plugin</groupId>
             <artifactId>che-plugin-orion-editor</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.che.plugin</groupId>
             <artifactId>che-plugin-requirejs</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.che.lib</groupId>
-            <artifactId>che-terminal-client</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.gwt</groupId>
