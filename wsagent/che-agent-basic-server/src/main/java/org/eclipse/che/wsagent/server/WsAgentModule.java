@@ -26,23 +26,12 @@ import org.eclipse.che.api.core.jsonrpc.JsonRpcFactory;
 import org.eclipse.che.api.core.jsonrpc.JsonRpcMessageReceiver;
 import org.eclipse.che.api.core.jsonrpc.RequestHandlerConfigurator;
 import org.eclipse.che.api.core.rest.ApiInfoService;
-import org.eclipse.che.api.core.rest.CoreRestModule;
-import org.eclipse.che.api.core.util.FileCleaner.FileCleanerModule;
 import org.eclipse.che.api.core.websocket.WebSocketMessageReceiver;
 import org.eclipse.che.api.core.websocket.WebSocketMessageTransmitter;
 import org.eclipse.che.api.core.websocket.impl.BasicWebSocketMessageTransmitter;
 import org.eclipse.che.api.core.websocket.impl.GuiceInjectorEndpointConfigurator;
-import org.eclipse.che.api.git.GitConnectionFactory;
-import org.eclipse.che.api.git.GitUserResolver;
-import org.eclipse.che.api.git.LocalGitUserResolver;
-import org.eclipse.che.api.project.server.ProjectApiModule;
-import org.eclipse.che.api.user.server.spi.PreferenceDao;
 import org.eclipse.che.commons.lang.Pair;
-import org.eclipse.che.git.impl.jgit.JGitConnectionFactory;
 import org.eclipse.che.inject.DynaModule;
-import org.eclipse.che.plugin.java.server.rest.WsAgentURLProvider;
-import org.eclipse.che.plugin.ssh.key.HttpSshServiceClient;
-import org.eclipse.che.plugin.ssh.key.SshServiceClient;
 import org.eclipse.che.security.oauth.RemoteOAuthTokenProvider;
 
 import javax.inject.Named;
@@ -57,22 +46,20 @@ public class WsAgentModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(ApiInfoService.class);
-
         bind(OAuthTokenProvider.class).to(RemoteOAuthTokenProvider.class);
-        bind(SshServiceClient.class).to(HttpSshServiceClient.class);
-
-        bind(org.eclipse.che.plugin.ssh.key.script.SshKeyProvider.class)
-                .to(org.eclipse.che.plugin.ssh.key.script.SshKeyProviderImpl.class);
-
-        install(new CoreRestModule());
-        install(new FileCleanerModule());
-        install(new ProjectApiModule());
-        install(new org.eclipse.che.swagger.deploy.DocsModule());
-        install(new org.eclipse.che.api.debugger.server.DebuggerModule());
+        install(new org.eclipse.che.api.core.rest.CoreRestModule());
+        install(new org.eclipse.che.api.core.util.FileCleaner.FileCleanerModule());
+        install(new org.eclipse.che.api.project.server.ProjectApiModule());
         install(new org.eclipse.che.commons.schedule.executor.ScheduleModule());
+        install(new org.eclipse.che.plugin.ssh.key.SshModule());
+        install(new org.eclipse.che.api.languageserver.LanguageServerModule());
+        install(new org.eclipse.che.api.debugger.server.DebuggerModule());
+        install(new org.eclipse.che.api.git.GitModule());
+        install(new org.eclipse.che.git.impl.jgit.JGitModule());
 
-        bind(GitUserResolver.class).to(LocalGitUserResolver.class);
-        bind(GitConnectionFactory.class).to(JGitConnectionFactory.class);
+
+
+
 
         bind(URI.class).annotatedWith(Names.named("che.api")).toProvider(UriApiEndpointProvider.class);
         bind(String.class).annotatedWith(Names.named("user.token")).toProvider(UserTokenProvider.class);
