@@ -5,7 +5,7 @@ import com.google.inject.AbstractModule;
 import org.eclipse.che.api.git.GitConnectionFactory;
 
 /**
- * Guice module to install jgit implementation of git commponents
+ * Guice module to install jgit implementation of git components
  * @author Sergii Kabashnyuk
  */
 public class JGitModule extends AbstractModule {

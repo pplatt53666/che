@@ -16,7 +16,8 @@ import com.google.inject.multibindings.Multibinder;
 import org.eclipse.che.plugin.ssh.key.script.SshKeyUploader;
 
 /**
- * Created by sj on 17.03.17.
+ + * Guice module to install ssh key components
+ + * @author Sergii Kabashnyuk
  */
 public class SshModule extends AbstractModule {
     @Override
